@@ -39,7 +39,7 @@ void configureFordPip6(TriggerWaveform * s) {
 	/*
 	 * Ford TFI PIP - Inline 6 cylinder (4.9L 300 I6 EEC-IV)
 	 *
-	 * Physical wheel sequence: short tooth -> long gap -> 5 normal teeth
+	 * Physical wheel sequence: short tooth -> long gap -> 5 normal teeth_
 	 * Original rusefi code had: long gap -> short tooth -> 5 normal teeth
 	 *
 	 * Short tooth is placed at end of cycle (690-720 deg), long gap
