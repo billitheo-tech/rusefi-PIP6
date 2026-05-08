@@ -52,8 +52,8 @@ void configureFordPip6(TriggerWaveform * s) {
 	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
 	s->tdcPosition = 662.5;
 
-	s->setTriggerSynchronizationGap(0.55, 0.95);
-	s->setSecondTriggerSynchronizationGap(1.45, 1.85);
+	s->setTriggerSynchronizationGap2(0.55, 0.95);
+	s->setSecondTriggerSynchronizationGap2(1.45, 1.85);
 
 	// Teeth 1-5: normal teeth, 60 deg wide, 60 deg gaps
 	// Tooth 1 follows 90 deg long gap wrapping from previous cycle
