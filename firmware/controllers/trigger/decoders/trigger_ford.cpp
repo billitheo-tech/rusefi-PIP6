@@ -36,7 +36,45 @@ static void configureFordPip(TriggerWaveform * s, size_t count) {
 }
 
 void configureFordPip6(TriggerWaveform * s) {
-	configureFordPip(s, 6);
+	/*
+	 * Ford TFI PIP - Inline 6 cylinder (4.9L 300 I6 EEC-IV)
+	 *
+	 * Physical wheel sequence: short tooth -> long gap -> 5 normal teeth
+	 * Original rusefi code had: long gap -> short tooth -> 5 normal teeth
+	 *
+	 * Short tooth is placed at end of cycle (690-720 deg), long gap
+	 * wraps from 720 back to 90 deg where first normal tooth rises.
+	 *
+	 * Fall-to-fall sync ratios:
+	 *   Short tooth FALL (720) to Tooth 1 FALL (150) = 150 deg  LONG
+	 *   Normal tooth FALL to next FALL               = 120 deg  normal
+	 */
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
+	s->tdcPosition = 662.5;
+
+	s->setTriggerSynchronizationGap(0.55, 0.95);
+	s->setSecondTriggerSynchronizationGap(1.45, 1.85);
+
+	// Teeth 1-5: normal teeth, 60 deg wide, 60 deg gaps
+	// Tooth 1 follows 90 deg long gap wrapping from previous cycle
+	s->addEventAngle( 90, TriggerValue::RISE);
+	s->addEventAngle(150, TriggerValue::FALL);
+
+	s->addEventAngle(210, TriggerValue::RISE);
+	s->addEventAngle(270, TriggerValue::FALL);
+
+	s->addEventAngle(330, TriggerValue::RISE);
+	s->addEventAngle(390, TriggerValue::FALL);
+
+	s->addEventAngle(450, TriggerValue::RISE);
+	s->addEventAngle(510, TriggerValue::FALL);
+
+	s->addEventAngle(570, TriggerValue::RISE);
+	s->addEventAngle(630, TriggerValue::FALL);
+
+	// Short sync tooth: 30 deg wide, long gap follows (wraps to next cycle)
+	s->addEventAngle(690, TriggerValue::RISE);
+	s->addEventAngle(720, TriggerValue::FALL);
 }
 
 void configureFordPip8(TriggerWaveform * s) {
