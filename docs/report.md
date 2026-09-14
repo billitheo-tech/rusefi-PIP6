@@ -688,3 +688,62 @@ Validation:
 Open follow-ups:
 - `unit_tests/mocks.cpp:38` still trips GCC 16's `-Wmaybe-uninitialized`; only
   a local concern until CI moves to that compiler (see previous entry).
+
+## 2026-09-13 - Fork: CI status investigation, upstream sync (897 commits), local uaefi_pro build, setup docs
+
+What was done:
+- Investigated why the fork's GitHub Actions "never compiled". Finding: it has
+  compiled since the 2026-07-14 rebase. The red runs were confined to the three
+  May 2026 commits:
+
+  | Pre-rebase commit | Failure | Root cause |
+  |---|---|---|
+  | 19630d8dee, 345ead6cbe | compile step in Firmware on Windows / Unit Tests / Simulator / Configs | `setTriggerSynchronizationGap()` and `setSecondTriggerSynchronizationGap()` called with 2 args; they take 1 |
+  | 110180414b | rusEFI validate console (Java) | also red on upstream rusefi/rusefi at the same base 1c766c0027 -> inherited |
+  | 110180414b | Unit Tests on Windows | Post Run cleanup step; Linux unit tests passed on same commit -> runner flake |
+
+  The fix for the first row was already in 110180414b (switch to the `...Gap2(from, to)` setters).
+- Found that because CI is green, `Firmware at GHA` publishes
+  `rusefi_bundle_uaefi_pro.zip` (and on nightly runs `rusefi_uaefi_pro.bin`)
+  as downloadable workflow artifacts from the public fork on every push and on
+  the 00:27 UTC cron. Server/nightly-release uploads do not happen (gated to
+  rusefi/rusefi + secrets). Owner decided to leave Actions enabled for now.
+- Rebased master onto upstream/master: 897 commits, zero conflicts,
+  `configureFordPip6` byte-identical before/after. Three submodules were stale
+  after the rebase (ChibiOS, libfirmware, googletest) - same trap as July.
+- Compiled uaefi_pro in WSL from the NTFS clone: EXIT=0, 0 error lines,
+  31m40s wall (sys 12m44s = NTFS overhead). rusefi.bin 799,268 B, text 428,658
+  rodata 337,019 data 990. Signature `rusEFI master.2026.09.14.uaefi_pro.3342137515`
+  identical in .bin and regenerated rusefi_uaefi_pro.ini. Strings `uaefi_pro`
+  and `TT_FORD_TFI_PIP_6` present in .bin.
+- Rewrote/extended docs/local-dev-setup.md: new section 0 (CI findings and how
+  to disable publishing), section 2a (new-PC from-zero checklist A-G), verified
+  package inventory via dpkg (firmware image needs only the ARM toolchain + JDK
+  + make/xxd/mtools/dosfstools; host gcc/multilib/mingw are for unit tests,
+  simulator and Windows console only - none are installed here and the build
+  works), pre-rebase `git checkout -- .` step, sync history table, WSL-native
+  clone drift (still at May commit 110180414b), verify-by-artifact guidance.
+
+Key decisions and why:
+- Did not re-rebase for the single upstream commit that landed during the
+  build (6557ff5a2a "Update date" - automated date stamp, no code).
+- Documented the minimal *verified* package set rather than the official
+  scripts' superset, because the superset was the source of the "50 packages?"
+  confusion and the smaller set is proven by two successful builds.
+- Kept the WSL-native clone as-is (not deleted): documented as abandoned/stale
+  so nobody builds from it by accident.
+
+Validation:
+- Build log kept in session scratchpad (compile_uaefi_pro.log, 2005 lines).
+- Not hardware-flashed. known-good-firmware/ford-4.9L-pip6-uaefi_pro-2026-05-08
+  remains the verified fallback.
+
+Open follow-ups:
+- Flash and verify the 2026-09-13 build on the engine; if good, consider
+  snapshotting it into known-good-firmware/ alongside the May build.
+- `bundle` target not run this session, so no rusefi_update.srec was produced
+  for the console/bootloader updater path - run
+  `bash bin/compile.sh config/boards/hellen/uaefi/meta-info-uaefi_pro.env build_both_bundles`
+  if that flashing route is needed.
+- Before any product ships: Settings -> Actions -> Disable on the fork, and
+  purge existing artifacts (90-day retention).
