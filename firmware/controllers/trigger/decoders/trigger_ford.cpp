@@ -12,73 +12,94 @@
  * based on https://fordsix.com/threads/understanding-standard-and-signature-pip-thick-film-ignition.81515/
  * based on https://www.w8ji.com/distributor_stabbing.htm
  */
-static void configureFordPip(TriggerWaveform * s, size_t count) {
+void configureFordPip8(TriggerWaveform * s) {
 	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Rise);
 
 	s->tdcPosition = 662.5;
 
-	s->setTriggerSynchronizationGap(0.66);
-	s->setSecondTriggerSynchronizationGap(1.25);
-	/**
-	 * sensor is mounted on distributor but trigger shape is defined in engine cycle angles
-	 */
-	int oneCylinder = s->getCycleDuration() / count;
+	// Synchronization gaps matched to your Excel Fall-to-Fall ratios:
+	// Fall 7 to Fall 8 (76.5 / 90) = 0.85
+	// Fall 8 to Fall 1 (103.5 / 90) = 1.15
+	s->setTriggerSynchronizationGap2(1.30, 1.70);
+	s->setSecondTriggerSynchronizationGap2(0.50, 1.10);
 
-	s->addEventAngle(oneCylinder * 0.75, TriggerValue::RISE);
-	s->addEventAngle(oneCylinder, TriggerValue::FALL);
+	// Tooth 1: Normal tooth after 63 deg gap
+	s->addEventAngle(58.5, TriggerValue::RISE);
+	s->addEventAngle(103.5, TriggerValue::FALL);
 
+	// Tooth 2
+	s->addEventAngle(148.5, TriggerValue::RISE);
+	s->addEventAngle(193.5, TriggerValue::FALL);
 
-	for (int i = 2;i<=count;i++) {
-		s->addEventAngle(oneCylinder * (i - 0.5), TriggerValue::RISE);
-		s->addEventAngle(oneCylinder * i, TriggerValue::FALL);
-	}
+	// Tooth 3
+	s->addEventAngle(238.5, TriggerValue::RISE);
+	s->addEventAngle(283.5, TriggerValue::FALL);
 
+	// Tooth 4
+	s->addEventAngle(328.5, TriggerValue::RISE);
+	s->addEventAngle(373.5, TriggerValue::FALL);
+
+	// Tooth 5
+	s->addEventAngle(418.5, TriggerValue::RISE);
+	s->addEventAngle(463.5, TriggerValue::FALL);
+
+	// Tooth 6
+	s->addEventAngle(508.5, TriggerValue::RISE);
+	s->addEventAngle(553.5, TriggerValue::FALL);
+
+	// Tooth 7
+	s->addEventAngle(598.5, TriggerValue::RISE);
+	s->addEventAngle(643.5, TriggerValue::FALL);
+
+	// Tooth 8: Short signature tooth
+	s->addEventAngle(688.5, TriggerValue::RISE);
+	s->addEventAngle(720.0, TriggerValue::FALL);
 }
 
 void configureFordPip6(TriggerWaveform * s) {
 	/*
 	 * Ford TFI PIP - Inline 6 cylinder (4.9L 300 I6 EEC-IV)
 	 *
-	 * Physical wheel sequence: short tooth -> long gap -> 5 normal teeth_
-	 * Original rusefi code had: long gap -> short tooth -> 5 normal teeth
+	 * Physical wheel sequence based on table data:
+	 * Tooth 1: 60 deg tooth after 78 deg gap (Rise: 78, Fall: 138)
+	 * Teeth 2-5: 60 deg teeth with 60 deg gaps
+	 * Tooth 6: 42 deg short tooth (Rise: 678, Fall: 720)
 	 *
-	 * Short tooth is placed at end of cycle (690-720 deg), long gap
-	 * wraps from 720 back to 90 deg where first normal tooth rises.
-	 *
-	 * Fall-to-fall sync ratios:
-	 *   Short tooth FALL (720) to Tooth 1 FALL (150) = 150 deg  LONG
-	 *   Normal tooth FALL to next FALL               = 120 deg  normal
+	 * Sync Ratio Calculations (Fall-to-Fall):
+	 * Tooth 1 FALL (138) / Tooth 6 FALL to Tooth 1 FALL (138 deg) = 1.3529 (LONG)
+	 * Tooth 2 FALL (258) / Tooth 1 FALL to Tooth 2 FALL (120 deg) = 0.8696 (SHORT)
+	 * Tooth 6 FALL (720) / Tooth 5 FALL to Tooth 6 FALL (102 deg) = 0.8500 (SHORT)
 	 */
-	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Rise);
 	s->tdcPosition = 662.5;
 
-	s->setTriggerSynchronizationGap2(0.55, 0.95);
-	s->setSecondTriggerSynchronizationGap2(1.45, 1.85);
+	// Set synchronization gap ratios based on table fall-to-fall ratios (1.353, 0.870, 0.850)
+	s->setTriggerSynchronizationGap2(0.70, 0.95);
+	s->setSecondTriggerSynchronizationGap2(1.20, 1.70);
 
-	// Teeth 1-5: normal teeth, 60 deg wide, 60 deg gaps
-	// Tooth 1 follows 90 deg long gap wrapping from previous cycle
-	s->addEventAngle( 90, TriggerValue::RISE);
-	s->addEventAngle(150, TriggerValue::FALL);
+	// Tooth 1: Normal tooth after 78 deg gap
+	s->addEventAngle( 78, TriggerValue::RISE);
+	s->addEventAngle(138, TriggerValue::FALL);
 
-	s->addEventAngle(210, TriggerValue::RISE);
-	s->addEventAngle(270, TriggerValue::FALL);
+	// Tooth 2
+	s->addEventAngle(198, TriggerValue::RISE);
+	s->addEventAngle(258, TriggerValue::FALL);
 
-	s->addEventAngle(330, TriggerValue::RISE);
-	s->addEventAngle(390, TriggerValue::FALL);
+	// Tooth 3
+	s->addEventAngle(318, TriggerValue::RISE);
+	s->addEventAngle(378, TriggerValue::FALL);
 
-	s->addEventAngle(450, TriggerValue::RISE);
-	s->addEventAngle(510, TriggerValue::FALL);
+	// Tooth 4
+	s->addEventAngle(438, TriggerValue::RISE);
+	s->addEventAngle(498, TriggerValue::FALL);
 
-	s->addEventAngle(570, TriggerValue::RISE);
-	s->addEventAngle(630, TriggerValue::FALL);
+	// Tooth 5
+	s->addEventAngle(558, TriggerValue::RISE);
+	s->addEventAngle(618, TriggerValue::FALL);
 
-	// Short sync tooth: 30 deg wide, long gap follows (wraps to next cycle)
-	s->addEventAngle(690, TriggerValue::RISE);
+	// Tooth 6: Short sync tooth (42 deg wide)
+	s->addEventAngle(678, TriggerValue::RISE);
 	s->addEventAngle(720, TriggerValue::FALL);
-}
-
-void configureFordPip8(TriggerWaveform * s) {
-	configureFordPip(s, 8);
 }
 
 void configureFordST170(TriggerWaveform * s) {
