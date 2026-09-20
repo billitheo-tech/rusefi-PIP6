@@ -13,14 +13,14 @@
  * based on https://www.w8ji.com/distributor_stabbing.htm
  */
 void configureFordPip8(TriggerWaveform * s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Rise);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
 
 	s->tdcPosition = 662.5;
 
-	// Synchronization gaps matched to your Excel Fall-to-Fall ratios:
-	// Fall 7 to Fall 8 (76.5 / 90) = 0.85
-	// Fall 8 to Fall 1 (103.5 / 90) = 1.15
-	s->setTriggerSynchronizationGap2(1.30, 1.70);
+    // Sync on falling edges. Fall-to-fall intervals: 90 x6, 76.5 (short signature tooth), 103.5 (long gap).
+    // Ratios (current/previous): Fall 8 (720) = 76.5/90 = 0.85, Fall 1 (103.5) = 103.5/76.5 = 1.353
+    // Sync at Fall 1: gap1 must contain 1.353, gap2 (previous) must contain 0.85.
+	s->setTriggerSynchronizationGap2(1.15, 1.75);
 	s->setSecondTriggerSynchronizationGap2(0.50, 1.10);
 
 	// Tooth 1: Normal tooth after 63 deg gap
@@ -70,7 +70,7 @@ void configureFordPip6(TriggerWaveform * s) {
 	 * Tooth 2 FALL (258) / Tooth 1 FALL to Tooth 2 FALL (120 deg) = 0.8696 (SHORT)
 	 * Tooth 6 FALL (720) / Tooth 5 FALL to Tooth 6 FALL (102 deg) = 0.8500 (SHORT)
 	 */
-	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Rise);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
 	s->tdcPosition = 662.5;
 
 	// Set synchronization gap ratios based on table fall-to-fall ratios (1.353, 0.870, 0.850)
