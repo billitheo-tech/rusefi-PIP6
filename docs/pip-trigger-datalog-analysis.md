@@ -137,6 +137,49 @@ Rise edges could not be checked from fall-to-fall ratios; the per-index
 instant RPM at rise indices was clean (+-40), so they were shifted with the
 falls and left otherwise alone.
 
+### 4a. Hardware confirmation, log `2026-09-21_01.44.11.mlg` (build `283584a79a`)
+
+Same engine, 15.6 s, 873-2519 RPM, ECU signature `rusEFI master.2026.09.21.uaefi_pro.3342137515`
+(boot banner `Compiled: Sep 21 2026 - 06:25:41`, `initializeTriggerWaveform(TT_FORD_TFI_PIP_6/39)`, no shape error).
+
+| Metric | Before (`e5d40890bc`) | After (`283584a79a`) |
+|---|---|---|
+| Trigger errors / sync losses while running | 0 / 0 | 0 / 0 |
+| Syncs vs crank revs | 512 vs ~1023 | 172 vs ~343 (still 1 per cycle) |
+| instant RPM - RPM p5/p95 | -82 / +176 | -38 / +45 |
+| instant RPM range per cycle | 228 rpm = 11.5% of RPM | 24 rpm = 2.2% of RPM |
+| idx 8 (sync tooth fall) instant RPM bias | +96 | -4 |
+| idx 10 (long-gap fall) instant RPM bias | -56 | -2 |
+| `Sync: trigger angle error` max | +13.1 | +7.7 |
+| idx 8 / 9 angle error median | +4.0 / -5.0 | -2.4 / +1.0 |
+| largest coded-vs-measured interval error | ~7 deg | 1.1 deg |
+| SYNC POINT | fall 258 only | fall 265 only |
+
+The per-index ripple locked to the sync ratio is gone; the remaining 2.2%
+per-cycle range is ordinary combustion speed variation (no longer a constant
+percentage pinned to one index). Warning 9007 still appeared once in the log
+although sampled angle error never exceeded 7.7 deg - the ECU checks every
+tooth while the log samples at ~156 Hz, so a single transient during the
+pull to 2500 RPM is plausible. Watch it in longer logs; if it becomes
+frequent, investigate; if rare, ignore.
+
+**Still outstanding - timing light on a cylinder other than #1.** Every
+datalog check above is *relative* (tooth-to-tooth). The absolute reference
+(`tdcPosition` + `globalTriggerAngleOffset`) was strobed on cylinder 1,
+which is scheduled off the tooth 5 fall and was correct both before and
+after the fix. The cylinder that changed is the one whose TDC sits in the
+0-85 deg window after the sync tooth (TDC 669.5 - 720 + 120 = 69.5 deg in
+trigger coordinates; with firing order 1-5-3-6-2-4 that is the cylinder
+firing 120 deg after #1, i.e. **cylinder 5**). Procedure: engine warm at
+idle, `timingMode = fixed` with a known `fixedModeTiming`, timing light on
+the #5 plug wire, compare the strobed advance against the #1 reading taken
+the same way. They should agree within ~1-2 deg. If #5 reads ~7 deg *more
+retarded* than #1 the rotation was applied in the wrong direction; if it
+reads ~7 deg *more advanced*, the old error is still present (build not
+flashed). Note the 300 I6 has no timing marks per cylinder - use a
+piston-stop/degree-wheel-referenced mark or compare #5 against #1 with the
+same light and mark on the damper, accepting the 120 deg offset.
+
 ## 5. Procedure for the V8 (PIP8) log
 
 1. Confirm what is on the ECU: the log header signature must be the fork's

@@ -815,3 +815,36 @@ Open follow-ups:
 - V8 PIP8 log: follow docs/pip-trigger-datalog-analysis.md section 5.
 - Board still carries the 2026-09-19 backup-SRAM "Watchdog Reset detected"
   record from the upstream firmware period; watch whether it recurs.
+
+## 2026-09-21 - Ford PIP6: 283584a79a flashed and validated on the truck
+
+What was done:
+- Flashed the 283584a79a uaefi_pro bundle via the console (OpenBLT, COM4).
+  Post-flash ECU signature rusEFI master.2026.09.21.uaefi_pro.3342137515,
+  boot banner Compiled Sep 21 2026 06:25:41, initializeTriggerWaveform
+  (TT_FORD_TFI_PIP_6/39) with no checkSwitchTimes/shape error, tune read
+  from flash intact. The stale 2026-09-19 "Watchdog Reset" backup-SRAM record
+  is gone (replaced by the expected "Deliberate reboot: jump to OpenBLT").
+- Analyzed the first post-fix datalog 2026-09-21_01.44.11.mlg (15.6 s,
+  873-2519 RPM) with tools/pip_trigger_analysis/analyze_pip.py --trigger pip6.
+
+Validation (before -> after):
+- Trigger errors / sync losses: 0/0 -> 0/0; one sync per 720 cycle both times.
+- instant RPM range per cycle: 11.5% of RPM -> 2.2%.
+- instant RPM bias at the sync tooth fall (idx 8): +96 -> -4 rpm;
+  long-gap fall (idx 10): -56 -> -2 rpm.
+- Sync: trigger angle error max: +13.1 -> +7.7 deg; idx 8/9 medians
+  +4.0/-5.0 -> -2.4/+1.0.
+- Coded vs measured interval error: ~7 deg -> 1.1 deg. Exactly one SYNC
+  POINT (fall 265).
+- Warning 9007 seen once; sampled angle error never exceeded 10 deg, so a
+  between-samples transient on the pull to 2500 RPM. Watch in longer logs.
+- Details and the before/after table: docs/pip-trigger-datalog-analysis.md
+  section 4a.
+
+Open follow-ups:
+- NOT YET DONE: timing light on cylinder 5 (the cylinder whose TDC sits in
+  the 0-85 deg window after the sync tooth; the only one whose timing moved).
+  Datalogs prove tooth-to-tooth geometry only; the absolute reference was
+  strobed on #1, which was unaffected. Procedure in section 4a of the doc.
+- V8 PIP8 log: docs/pip-trigger-datalog-analysis.md section 5.
