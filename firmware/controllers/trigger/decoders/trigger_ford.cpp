@@ -15,7 +15,7 @@
 void configureFordPip8(TriggerWaveform * s) {
 	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
 
-	s->tdcPosition = 669.5;
+	s->tdcPosition = 662.5;
 
     // Sync on falling edges. Fall-to-fall intervals: 90 x6, 76.5 (short signature tooth), 103.5 (long gap).
     // Ratios (current/previous): Fall 8 (720) = 76.5/90 = 0.85, Fall 1 (103.5) = 103.5/76.5 = 1.353
