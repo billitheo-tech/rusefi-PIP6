@@ -747,3 +747,71 @@ Open follow-ups:
   if that flashing route is needed.
 - Before any product ships: Settings -> Actions -> Disable on the fork, and
   purge existing artifacts (90-day retention).
+
+## 2026-09-21 - Ford PIP6: datalog sanity check, sync tooth angle correction, reusable analysis tooling
+
+What was done:
+- Parsed TunerStudio datalog 2026-09-20_21.57.52.mlg (1995 F150 4.9L I6,
+  32 s, 935-2804 RPM, firmware 3342137515 = fork e5d40890bc) to answer
+  "instant RPM tracks Trigger Latest Ratio but RPM does not - is the
+  firmware safe?". Sync was perfect (0 trigger errors, 0 sync losses, one
+  sync per 720 cycle, ratio spread +-0.02 over a 3:1 RPM range).
+- Root cause of the ripple: wheel geometry, not the engine. Backing the
+  fall-to-fall intervals out of the measured ratios (0.835/1.000/0.984/
+  1.009/0.795/1.522) gave 144.5/120.8/120.8/118.8/119.9/95.3 deg versus
+  coded 138/120/120/120/120/102: the sync tooth (tooth 6) falling edge is
+  ~7 deg earlier than modelled. Instant RPM uses coded angles per edge, so
+  it showed +7%/-5% at indices 8/10; main RPM is sync-to-sync and immune.
+  Consequence: spark for the cylinder with TDC at 62.5 (scheduled off that
+  tooth) fired ~7 deg early while cylinder 1 read correct on a timing light.
+- First fix 7be50d41d2 (tooth 6 fall 720 -> 713) compiled on all boards but
+  failed Unit Tests / Unit Tests on Windows / Configs & Live Docs:
+  MultiChannelStateSequence::checkSwitchTimes requires the last shape event
+  at exactly 720 (firmwareError CUSTOM_ERR_WAVE_1 -> critical error at boot).
+  Do not flash that build.
+- Correct fix 67773c417d: every PIP6 edge rotated +7 deg (85/145 ... 685/720),
+  tdcPosition 662.5 -> 669.5 so the physical reference does not move.
+  283584a79a restores configureFordPip8's tdcPosition (662.5), touched by an
+  over-broad sed in the previous commit.
+- Added tools/pip_trigger_analysis/ (mlg.py MLG reader, analyze_pip.py) and
+  docs/pip-trigger-datalog-analysis.md: method, I6 findings, the +7 deg
+  rationale, and a step-by-step procedure for the upcoming V8 PIP8 log. The
+  tool reads the coded wheel from trigger_ford.cpp so it cannot drift.
+  CLAUDE.md gained the two durable rules (last event at 720; constant-%
+  instant RPM ripple = geometry).
+
+  | File | Change |
+  |---|---|
+  | firmware/controllers/trigger/decoders/trigger_ford.cpp | configureFordPip6 rotated +7 deg, tdcPosition 669.5, comment rewritten with measured data |
+  | tools/pip_trigger_analysis/mlg.py | new: MLG v1/v2 reader (TS and console layouts) |
+  | tools/pip_trigger_analysis/analyze_pip.py | new: sync health, per-index table, geometry back-out, sync window check |
+  | docs/pip-trigger-datalog-analysis.md | new: method + findings + V8 procedure |
+  | CLAUDE.md | Development Notes pointer + two rules |
+
+Key decisions and why:
+- Rotate the whole wheel rather than move one edge: checkSwitchTimes forces
+  the last event to 720, and a uniform rotation plus equal tdcPosition shift
+  is physically identical to moving the one edge.
+- Left rise edges at +7 with the falls: fall-to-fall ratios cannot see rise
+  positions, and per-index instant RPM at rise indices was clean (+-40 rpm).
+- Sync windows unchanged: measured ratios sit well inside them and the
+  tooth 6 false candidate is still rejected by its second gap (~1.0).
+- No dedicated unit test added (owner's call); test_all_triggers already
+  guards shape validity, which is what caught 7be50d41d2.
+
+Validation:
+- Re-running analyze_pip.py against the new shape: residual interval error
+  <= 1.2 deg; exactly one SYNC POINT (fall 265).
+- CI on 283584a79a in progress at time of writing: TS Plugin, validate
+  console, Firmware on Windows green so far; Unit Tests pending (this is the
+  gate that failed on 7be50d41d2).
+- Not yet hardware-verified.
+
+Open follow-ups:
+- Flash the 283584a79a uaefi_pro bundle once CI is green; confirm boot log
+  shows initializeTriggerWaveform(TT_FORD_TFI_PIP_6/39) with no shape error;
+  timing light on a cylinder other than #1; re-log and re-run the tool
+  (expect instant RPM range to drop from ~11.5% of RPM to a few %).
+- V8 PIP8 log: follow docs/pip-trigger-datalog-analysis.md section 5.
+- Board still carries the 2026-09-19 backup-SRAM "Watchdog Reset detected"
+  record from the upstream firmware period; watch whether it recurs.

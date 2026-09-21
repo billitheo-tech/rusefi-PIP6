@@ -318,6 +318,7 @@ Gotchas:
 - All PRs must pass CI gates (firmware builds for all boards, unit tests)
 - Wiki: https://wiki.rusefi.com/
 - Adding a new trigger: `docs/adding-new-trigger.md`
+- Validating a trigger shape against a real-engine `.mlg` datalog (Ford TFI PIP fork work): `docs/pip-trigger-datalog-analysis.md` + `tools/pip_trigger_analysis/`. Two non-obvious rules learned there: (1) `MultiChannelStateSequence::checkSwitchTimes()` requires the **last event of every trigger shape to sit at exactly 720 deg** - moving a single edge off 720 compiles fine but is a `firmwareError` at boot (engine will not run) and fails Unit Tests, so correct a mis-modelled sync tooth by rotating the whole wheel and shifting `tdcPosition` by the same amount; (2) a per-tooth ripple in `sync: instant RPM` that is a *constant percentage* of RPM from idle to high RPM, with `RPM` itself flat, is a wheel-geometry error in the coded angles (instant RPM uses coded angles over ~90 deg; main RPM is sync-to-sync), not engine speed fluctuation - and it silently mis-times every spark scheduled off the wrong tooth while a timing light on cylinder 1 still reads correct.
 - TunerStudio General Notes: `.junie/ts-readme.md`
 
 See also .junie/guidelines.md file
