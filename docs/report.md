@@ -848,3 +848,26 @@ Open follow-ups:
   Datalogs prove tooth-to-tooth geometry only; the absolute reference was
   strobed on #1, which was unaffected. Procedure in section 4a of the doc.
 - V8 PIP8 log: docs/pip-trigger-datalog-analysis.md section 5.
+
+## 2026-09-26 - Ford PIP8 (V8): first datalog check of the decoder
+
+What was done:
+- Analyzed `Log idle.mlg` (5.0L V8, uaefi121, build
+  master.2026.09.20.uaefi121.892460153, 40.7 s, 660-3925 RPM) with
+  tools/pip_trigger_analysis/analyze_pip.py --trigger pip8, plus a
+  time-in-state check of the rise edges and a warning timeline.
+
+Result:
+- Sync clean: 0 trigger errors, 0 sync losses, 347 syncs for ~690 revs,
+  exactly one SYNC POINT (fall 103.5).
+- Geometry matches the coded wheel: largest fall-to-fall interval error
+  1.1 deg; rise edges within 1.6 deg. No shape change needed (contrast with
+  the I6, where the signature tooth was 7 deg off).
+- 9007/9008 only on throttle transients. 9012 (out-of-order coil) at
+  3622 RPM is a tune issue: flat 4.0 ms dwell, single coil at 4 sparks/rev
+  -> coil duty 104.7% at 3925 RPM.
+- Details: docs/pip-trigger-datalog-analysis.md section 5a.
+
+Open follow-ups:
+- Taper the V8 dwell table above ~3000 RPM.
+- Timing light on a cylinder other than #1 (V8 and I6 cylinder 5).

@@ -17,7 +17,10 @@ Tooling lives in `tools/pip_trigger_analysis/` (python3, no packages):
 
 Run from the repo root (WSL: `python3 tools/pip_trigger_analysis/analyze_pip.py
 --trigger pip8 "/mnt/c/Users/<you>/Documents/TunerStudioProjects/<proj>/DataLogs/<file>.mlg"`).
-On this machine Windows has no `python3` on PATH - use the WSL shell.
+On this machine Windows has no working `python3` on PATH (the WindowsApps one
+is a Store stub) - use the WSL shell, or call
+`C:/Users/bhunt/AppData/Local/Programs/Python/Python38/python` directly from
+Git Bash; the tools run fine on 3.8.
 
 ## 1. What a good log needs
 
@@ -200,6 +203,40 @@ same light and mark on the damper, accepting the 120 deg offset.
    windows unless the measured ratios approach their edges. Push, and watch
    **Unit Tests**, not just the firmware jobs, before flashing.
 6. Verify on the truck with a timing light on a cylinder *other than* #1.
+
+### 5a. First V8 result, log `Log idle.mlg` (2026-09-26, 5.0L, PIP8)
+
+Firmware `rusEFI master.2026.09.20.uaefi121.892460153` (uaefi121 board, so a
+different signature family from the I6's uaefi_pro). Built before the
+2026-09-21 PIP6 commits; none of them changed `configureFordPip8` (sync edge
+Fall, tdcPosition 662.5), so the checked-out shape is what ran. Tune: Ford
+PIP8, 8 cyl, 1-3-7-2-6-5-4-8, single coil, globalTriggerAngleOffset 20.
+40.7 s, 660-3925 RPM (idle, two throttle blips, 25 s of idle).
+
+| Check | Result |
+|---|---|
+| Trigger errors / sync losses while running | 0 / 0 (`Trigger Error Counter` 1 -> 1, set before log start) |
+| Syncs vs crank revs | +347 syncs, ~690 revs -> one sync per cycle |
+| SYNC POINT | fall 103.5 only |
+| Measured ratios | 1.371 / 0.879 / 1.001 / 0.991 / 1.013 / 1.006 / 0.995 / 0.834 (coded 1.353 / 0.870 / 1 x5 / 0.850) |
+| Measured intervals | 102.6 / 90.1 / 90.2 / 89.4 / 90.5 / 91.1 / 90.6 / 75.6 |
+| Largest interval error | 1.1 deg (short/long pair both -0.9) |
+| Rise edges (idle time-in-state) | all within 1.6 deg of coded; tooth 8 high 29.9 (31.5), long gap 57.2 (58.5) |
+| instant RPM - RPM per index | medians -8..+14 rpm, no index locked bias |
+| instant RPM range per cycle | 7.7% of RPM at idle (combustion ripple, not index-locked) |
+| `Sync: trigger angle error` | steady: p1/p99 -5.2/+5.6; max 12.2 |
+
+**Verdict: PIP8 wheel model matches this distributor; no rotation needed.**
+Unlike the I6, the signature tooth was modelled correctly.
+
+Warnings: 9007 on the rev to 3925, 9008 on three snap decelerations - all
+transients (angle error is within +-6 outside acceleration). 9012
+`CUSTOM_OUT_OF_ORDER_COIL` at 3622 RPM is **not a trigger issue**: the tune
+has flat 4.0 ms dwell with a single coil firing every 90 crank deg, so the
+spark period (60000 / RPM / 4 ms) drops below 4 ms above ~3750 RPM - logged
+coil duty peaked at 104.7%. Taper `sparkDwellValues` at high RPM.
+
+Still outstanding: timing light on a cylinder other than #1 (as for the I6).
 
 ## 6. Change history
 
