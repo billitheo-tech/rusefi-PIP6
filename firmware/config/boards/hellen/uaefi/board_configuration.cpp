@@ -41,6 +41,15 @@ static void uaefi_boardConfigOverrides() {
 
 	hellenMegaSdWithAccelerometer();
 	engineConfiguration->injectionPinMode = OM_DEFAULT;
+	// Ford TFI: the TFI module times the spark from one SPOUT edge. With "default inverted"
+	// that edge landed on the START of rusEFI's dwell pulse, so actual spark = commanded +
+	// dwell angle: timing moved with the dwell setting and with RPM (dwell angle grows with
+	// RPM), which made idle hunt at fixed timing. OM_DEFAULT puts the TFI's edge on the END of
+	// the pulse = the scheduled spark. Forced here because TunerStudio would not change it.
+	// After this change globalTriggerAngleOffset drops by ~the idle dwell angle (44 -> ~0-10);
+	// the old offset was compensating for the dwell error. Re-check with a timing light.
+	// Hardware: stock uaEFI (R20 fitted, no IGBT) driving the rusEFI-Shield-4.9L SPOUT stage.
+	engineConfiguration->ignitionPinMode = OM_DEFAULT;
 
   engineConfiguration->vrThreshold[0].pin = Gpio::MM100_OUT_PWM6;
 
